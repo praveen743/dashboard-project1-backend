@@ -133,6 +133,20 @@ app.get("/task",authenticate,async function (req, res) {
 
 });
 
+app.get("/alltask",authenticate,async function (req, res) {
+    try {
+        console.log(req.params.id);
+        let connection = await mongoClient.connect(URL);
+        let db = connection.db("zendashboard");
+        let taskdata = await db.collection("task").find({status:'notdone'}).toArray();
+        await connection.close();
+        res.json(taskdata);
+    } catch (error) {
+        console.log(error)
+    }
+
+});
+
 // task/id
 app.get("/task/:id",authenticate,async function (req, res) {
     try {
@@ -148,13 +162,27 @@ app.get("/task/:id",authenticate,async function (req, res) {
 
 });
 
+app.get("/getbyid/:id", async function (req, res) {
+    try {
+        let connection = await mongoClient.connect(URL);
+        let db = connection.db("zendashboard")
+        let objId = mongodb.ObjectId(req.params.id)
+        var orderarr = await db.collection("task").find({ _id: objId }).toArray();
+        await connection.close();
+        res.json(orderarr);
+    } catch (error) {
+        console.log(error)
+    }
+});
+
+
 // mytask/id
 app.get("/mytask/:id",authenticate, async function (req, res) {
     try {
         let connection = await mongoClient.connect(URL);
         let db = connection.db("zendashboard");
         console.log(req.params.id);
-        let attendancedata = await db.collection("task").find({"userid":req.params.id}).toArray();
+        let attendancedata = await db.collection("task").find({"userid":req.params.id,status:"done"}).toArray();
         console.log(attendancedata)
         await connection.close();
         res.json(attendancedata);
@@ -164,6 +192,34 @@ app.get("/mytask/:id",authenticate, async function (req, res) {
 
 });
 
+app.get("/notgraded/:id",authenticate, async function (req, res) {
+    try {
+        let connection = await mongoClient.connect(URL);
+        let db = connection.db("zendashboard");
+        console.log(req.params.id);
+        let attendancedata = await db.collection("task").find({"userid":req.params.id,status:"notdone"}).toArray();
+        console.log(attendancedata)
+        await connection.close();
+        res.json(attendancedata);
+    } catch (error) {
+        console.log(error)
+    }
+
+});
+
+app.put("/edittask/:id", async function (req, res) {
+    try {
+        let connection = await mongoClient.connect(URL);
+        let db = connection.db("zendashboard");
+        let objId = mongodb.ObjectId(req.params.id)
+         var updatedarr = await db.collection("task").updateOne({ _id: objId }, { $set: req.body })
+         await connection.close();
+        res.json({ message: "Task Graded" })
+    } catch (error) {
+        res.json(error);
+        console.log(error)
+    }
+});
 
 //gradetask
 app.get("/gradetask/:id",authenticate,async function (req, res) {
@@ -172,7 +228,9 @@ app.get("/gradetask/:id",authenticate,async function (req, res) {
         let connection = await mongoClient.connect(URL);
         let db = connection.db("zendashboard");
         let objId = mongodb.ObjectId(req.params.id)
+        console.log(objId)
         let taskdata = await db.collection("task").find({_id:objId}).toArray();
+      console.log(taskdata)
         await connection.close();
         res.json(taskdata);
     } catch (error) {
@@ -228,5 +286,20 @@ app.get("/attendance/:id",authenticate, async function (req, res) {
 
 });
 
+//delete task
 
-app.listen(process.env.PORT || 3000)
+app.delete("/deletetask/:id", async function (req, res) {
+    try {
+        let connection = await mongoClient.connect(URL);
+        let db = connection.db("zendashboard");
+        let objId = mongodb.ObjectId(req.params.id)
+        var deldata = await db.collection("task").deleteOne({ _id: objId })
+        await connection.close();
+        res.json({ message: "task Deleted" })
+    } catch (error) {
+        console.log(error)
+    }
+});
+
+
+app.listen(3003, () => { console.log("app is running") })
