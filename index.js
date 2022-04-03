@@ -34,7 +34,7 @@ let authenticate = function(req,res,next){
         console.log("token Expired")
         res.json({message:"token Expired"})
     }
-   
+}
 
 
 //registeration
