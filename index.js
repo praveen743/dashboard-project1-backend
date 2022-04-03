@@ -16,19 +16,25 @@ app.use(cors({
 
 //authentication
 let authenticate = function(req,res,next){
-    if(req.headers.authorization){
-        let result = jswt.verify(req.headers.authorization,secret);
-        if(result){
-            next();
+    try{
+        if(req.headers.authorization){
+            let result = jswt.verify(req.headers.authorization,secret);
+            if(result){
+                next();
+            }
+            else{
+                res.json({message:"token invalid"})
+            }
         }
         else{
-            res.status(401).json({message:"token invalid"})
+            res.json({message:"not authorized"})
         }
     }
-    else{
-        res.status(401).json({message:"not authorized"})
+    catch(error){
+        console.log("token Expired")
+        res.json({message:"token Expired"})
     }
-}
+   
 
 
 //registeration
@@ -80,7 +86,7 @@ app.post('/login', async function (req, res) {
         if (user) {
             let passwordcheck = await bcrypt.compare(req.body.password, user.password)
             if (passwordcheck) {
-                let token = jswt.sign({userid:user._id},secret,{expiresIn: '1h'});
+                let token = jswt.sign({userid:user._id},secret,{expiresIn: '10h'});
                 res.json({ message: "login",user,token });
             }
             else {
@@ -103,7 +109,7 @@ app.post("/task", async function (req, res) {
     try {
         let connection = await mongoClient.connect(URL);
         let db = connection.db("zendashboard")
-        let user = await db.collection("task").findOne({ classnumber: req.body.classnumber });
+        let user = await db.collection("task").findOne({ classnumber: req.body.classnumber,userid:req.body.userid });
         if(user){
             res.json({ message: "Task already Submitted!" });
             connection.close();
@@ -258,16 +264,22 @@ app.post("/attendance", async function (req, res) {
     try {
         let connection = await mongoClient.connect(URL);
         let db = connection.db("zendashboard")
-        let user = await db.collection("attendance").findOne({ classnumber: req.body.classnumber });
+        let user = await db.collection("attendance").findOne({ classnumber: req.body.classnumber, userid: req.body.userid });
         if(user){
             res.json({ message: "Attendance already Submitted Can't Change :(" });
             connection.close();
         }
         else{
+              console.log(req.body.Attendance);
+            if(req.body.Attendance==''){
+                res.json({ message: "Please select any one option" });
+            }
+            else{
             await db.collection("attendance").insertOne(req.body)
         await connection.close();
-        res.json({ message: "User Added" })
+        res.json({ message: "Done" })
         }
+    }
     } catch (error) {
         console.log(error)
     }
